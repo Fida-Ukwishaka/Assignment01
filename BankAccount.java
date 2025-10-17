@@ -7,18 +7,23 @@ public class BankAccount {
 
 
      // Constants
-    private static final double CURRENT_ACCT_MIN_BALANCE = 100.0;
-    private static final double CURRENT_ACCT_MAINTENANCE_FEE = 10.0;
-    private static final double SAVINGS_ACCT_MIN_BALANCE = 50.0;
-    private static final double SAVINGS_ACCT_INTEREST_RATE = 0.03; // 3%
+    private static final double CURRENT_ACCT_MIN_BALANCE = 50.00;
+    private static final double SAVINGS_ACCT_MIN_BALANCE = 100.00;
+
+    private static final double SAVINGS_ACCT_INTEREST_RATE = 0.02;  // 2% annual
+    private static final double CURRENT_ACCT_MAINTENANCE_FEE = 10.00; // monthly fee
+
+    private static final int SAVINGS_WITHDRAWAL_LIMIT = 2; // per month
+    private static final int NO_WITHDRAWAL_LIMIT = -1;
 
 
 
     // Member variables (attributes)
-    private String id;
-    private AccountType type;
+    private String acctID;
+    private AccountType acctType;
     private double balance;
     private int numWithdrawals;
+    private double withdrawalLimit;
     private double minBalance;
     private double interestRate;
     private double maintenanceFee;
@@ -26,24 +31,25 @@ public class BankAccount {
 
 
 
-    // Constructor
-    public BankAccount(String id, AccountType type) {
-        this.id = id;
-        this.type = type;
+    // Constructors
+    public BankAccount(String acctID, AccountType acctType) {
+        this.acctID = acctID;
+        this.acctType = acctType;
         this.balance = 0.0;
         this.numWithdrawals = 0;
-        this.inTheRed = false;
 
 
-        // Set account-specific attributes
-        if (type == AccountType.CURRENTS) {
+        if (acctType == AccountType.CURRENTS) {
             this.minBalance = CURRENT_ACCT_MIN_BALANCE;
             this.maintenanceFee = CURRENT_ACCT_MAINTENANCE_FEE;
             this.interestRate = 0.0; // No interest for current accounts
-        } else if (type == AccountType.SAVINGS) {
+            this.withdrawalLimit = NO_WITHDRAWAL_LIMIT; // No withdrawal limit for current accounts
+        } 
+        else if (acctType == AccountType.SAVINGS) {
             this.minBalance = SAVINGS_ACCT_MIN_BALANCE;
             this.interestRate = SAVINGS_ACCT_INTEREST_RATE;
             this.maintenanceFee = 0.0; // No maintenance fee for savings accounts
+            this.withdrawalLimit = SAVINGS_WITHDRAWAL_LIMIT;
         }
         // check if the account is in the red
         this.inTheRed = this.balance < this.minBalance;
@@ -51,9 +57,23 @@ public class BankAccount {
 
 
     // another constructor for the bank account class that takes in an opening accountbalance, in addition to an account type and id:
-    public BankAccount(String id, AccountType type, double openingBalance) {
-        this(id, type); // Call the other constructor to initialize common attributes
+    public BankAccount(String acctID, AccountType acctType, double openingBalance) {
+        this(acctID, acctType); // Call the other constructor to initialize common attributes
         this.balance = openingBalance; // Set the opening balance
+        this.numWithdrawals = 0;
+
+        if (acctType == AccountType.CURRENTS) {
+            this.minBalance = CURRENT_ACCT_MIN_BALANCE;
+            this.maintenanceFee = CURRENT_ACCT_MAINTENANCE_FEE;
+            this.interestRate = 0.0; // No interest for current accounts
+            this.withdrawalLimit = NO_WITHDRAWAL_LIMIT; // No withdrawal limit for current accounts
+        } 
+        else if (acctType == AccountType.SAVINGS) {
+            this.minBalance = SAVINGS_ACCT_MIN_BALANCE;
+            this.interestRate = SAVINGS_ACCT_INTEREST_RATE;
+            this.maintenanceFee = 0.0; // No maintenance fee for savings accounts
+            this.withdrawalLimit = SAVINGS_WITHDRAWAL_LIMIT;
+        } 
         // check if the account is in the red
         this.inTheRed = this.balance < this.minBalance;
     }
@@ -64,10 +84,10 @@ public class BankAccount {
         return this.balance;
     }
     public AccountType getAccountType() {
-        return this.type;
+        return this.acctType;
     }
     public String getAccountID() {
-        return this.id;
+        return this.acctID;
     }
     public double getMinBalance() {
         return this.minBalance;
@@ -76,6 +96,10 @@ public class BankAccount {
     public boolean withdraw(double amount) {
         if (amount <= 0) {
             System.out.println("Sorry, could not perform withdrawal: Amount must be positive.");
+            return false;
+        }
+        if (this.withdrawalLimit != NO_WITHDRAWAL_LIMIT && this.numWithdrawals >= this.withdrawalLimit) {
+            System.out.println("Sorry, could not perform withdrawal: Withdrawal limit reached.");
             return false;
         }
         if (this.inTheRed) {
@@ -104,8 +128,8 @@ public class BankAccount {
         // Update inTheRed status
         this.inTheRed = this.balance < this.minBalance;
     }
+    // Monthly maintenance method
     public void performMonthlyMaintenance() {
-   // one of them
         double earnedInterest = (this.balance * this.interestRate) / 12.0;
         this.balance += earnedInterest;
         this.balance -= this.maintenanceFee;
@@ -118,9 +142,11 @@ public class BankAccount {
         if (this.inTheRed) {
             System.out.println("WARNING: This account is in the red!");
         }
+        System.out.println("-----------------------------------------");
     }
+    // Transfer method
     public boolean transfer(boolean transferTo, BankAccount otherAccount, double amount) {
-        // second of them
+        boolean success;
         if (transferTo) {
             if (this.withdraw(amount)) {
                 otherAccount.deposit(amount);
@@ -133,11 +159,9 @@ public class BankAccount {
                 this.deposit(amount);
                 return true;
             } else {
+                System.out.println("Transfer failed.");
                 return false;
             }
-        }
-
-        
+        }   
     }
-
 }
